@@ -1,10 +1,14 @@
 import json
 from flask import Flask, render_template, g, jsonify, request
 from kazoo.client import KazooClient
+from werkzeug.exceptions import BadRequest
+import urllib
+
 app = Flask(__name__)
+# app.debug = True
 
 # Host string of the ZooKeeper servers to connect to
-ZK_HOSTS = '127.0.0.1:2181'
+# ZK_HOSTS = 'elsaprtmq01.server.hulu.com:2181'
 
 # Node metadata to view
 ZNODESTAT_ATTR = [
@@ -18,10 +22,18 @@ ZNODESTAT_ATTR = [
     'numChildren',
     'version']
 
+@app.template_filter('with_hosts')
+def with_hosts_filter(path):
+    return path + "?hosts=" + urllib.quote(g.hosts)
+
 @app.before_request
 def before_request():
+    hosts = request.args.get('hosts')
+    g.hosts = hosts
+    if (request.path.startswith('/nodes') or request.path.startswith('/data') or request.path.startswith('/zk')) and not hosts:
+      raise BadRequest('no hosts parameters')
     if request.path.startswith('/nodes/') or request.path.startswith('/data/'):
-        g.zk = KazooClient(hosts=ZK_HOSTS, read_only=True)
+        g.zk = KazooClient(hosts=g.hosts, read_only=True)
         g.zk.start()
 
 @app.teardown_request
@@ -33,7 +45,7 @@ def teardown_request(exception):
 @app.route('/zk/', defaults={'path': ''})
 @app.route('/zk/<path:path>')
 def view(path):
-    return render_template('zk.html', path=path, host=ZK_HOSTS)
+    return render_template('zk.html', path=path, hosts=g.hosts)
 
 @app.route('/nodes/', defaults={'path': ''})
 @app.route('/nodes/<path:path>')
@@ -52,6 +64,7 @@ def nodes(path):
     children = sorted(g.zk.get_children(path))
     return render_template('_nodes.html',
         path=full_path + '/',
+        hosts=g.hosts,
         children=children,
         ancestors=ancestors)
 
@@ -68,8 +81,14 @@ def data(path):
     return render_template('_data.html',
         path='/' + path,
         data=data,
+        hosts=g.hosts,
         is_dict=type(data) == dict,
         meta=meta);
+
+@app.route('/')
+def root():
+  return render_template('index.html')
+    
 
 def parse_data(raw_data):
     try:

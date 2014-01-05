@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+  <title>Simple ZooKeeper Viewer</title>
+  <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div id="container">
+    <div>
+      <form action='/zk' method='get'>
+        <div>
+          <label>Please input the zk hosts: (separated by ,) </label>
+        </div>
+        <div>
+          <textarea name="hosts"></textarea>
+        </div>
+        <div>
+          <input type="submit" value="go" />
+        </div>
+      </form>
+    </div>
+  </div>
+</body>

@@ -71,14 +71,14 @@
       if (event.state) {
         path = event.state.path;
       } else {
-        path = '/{{ path }}';
+        path = '/{{ path | with_hosts }}';
       }
       getNodes(path);
       getData(path);
     };
 
     if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-      var path = '/{{ path }}';
+      var path = '/{{ path | with_hosts }}';
       getNodes(path);
       getData(path);
     }
